@@ -1,0 +1,212 @@
+// Fonte do banco. NÃO edite prisma/schema.prisma: ele é gerado deste arquivo
+// por scripts/db.mjs, trocando __PROVEDOR__ por "sqlite" ou "postgresql"
+// conforme a DATABASE_URL. Por isso não há enum, Json, lista nem Decimal aqui:
+// tudo precisa funcionar igual nos dois bancos. Dinheiro sempre em centavos (Int).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "__PROVEDOR__"
+}
+
+/// Quem entra no painel.
+model Usuario {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  /// Sobe a cada troca de senha: derruba as sessões antigas.
+  versaoSessao Int      @default(1)
+  criadoEm     DateTime @default(now())
+  tokens       TokenSenha[]
+}
+
+/// Link de "esqueci a senha" (só o hash fica guardado).
+model TokenSenha {
+  id        String    @id @default(cuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  hash      String    @unique
+  expiraEm  DateTime
+  usadoEm   DateTime?
+}
+
+/// Todas as configurações (checkout, WhatsApp, Rastro, e-mail...).
+/// Valor em JSON; chaves secretas ficam cifradas (AES-256-GCM).
+model Config {
+  chave        String   @id
+  valor        String
+  atualizadoEm DateTime @updatedAt
+}
+
+/// Um negócio da prospecção: o registro central.
+model Negocio {
+  id                 String    @id @default(cuid())
+  nome               String
+  /// Só dígitos, com DDD e código do país (ex.: 5511987654321).
+  whatsapp           String?
+  telefone           String?
+  cidade             String?
+  categoria          String?
+  endereco           String?
+  site               String?
+  instagram          String?
+  nota               Float?
+  avaliacoes         Int?
+  linkMaps           String?
+  placeId            String?
+  foto               String?
+  /// rastro, manual, api, importacao
+  origem             String    @default("manual")
+  /// ENCONTRADO | PREVIA_PRONTA | CONTATADO | RESPONDEU | FECHADO | DESCARTADO
+  etapa              String    @default("ENCONTRADO")
+  etapaEm            DateTime?
+  /// Centavos.
+  valorFechado       Int?
+  motivoDescarte     String?
+  observacoes        String?
+  whatsappJid        String?
+  semWhatsapp        Boolean   @default(false)
+  respostaAutomatica Boolean   @default(false)
+  conversaPausada    Boolean   @default(false)
+  contatadoEm        DateTime?
+  criadoEm           DateTime  @default(now())
+  atualizadoEm       DateTime  @updatedAt
+  eventos            Evento[]
+  previas            Previa[]
+  cobrancas          Cobranca[]
+
+  @@index([etapa])
+  @@index([whatsapp])
+  @@index([placeId])
+  @@index([criadoEm])
+}
+
+/// Tudo que acontece com um negócio. A conversa é a sequência de
+/// MENSAGEM_ENVIADA / RESPOSTA_RECEBIDA.
+model Evento {
+  id         String   @id @default(cuid())
+  negocioId  String
+  negocio    Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  /// RASTRO | PREVIAS | CONVERSA | CHECKOUT | VOCE | AGENTE
+  agente     String
+  /// BUSCA | NEGOCIO_CRIADO | PREVIA_GERADA | MENSAGEM_ENVIADA | RESPOSTA_RECEBIDA | ETAPA_MUDOU | COBRANCA | PAGAMENTO | NOTA
+  tipo       String
+  texto      String
+  /// Id da mensagem no provedor de WhatsApp (evita gravar duas vezes).
+  externoId  String?  @unique
+  porAgente  Boolean  @default(false)
+  automatica Boolean  @default(false)
+  agenteNome String?
+  criadoEm   DateTime @default(now())
+
+  @@index([negocioId, criadoEm])
+  @@index([criadoEm])
+}
+
+/// Modelo de prévia: um HTML importado com marcações {{variavel}}.
+model Modelo {
+  id           String   @id @default(cuid())
+  nome         String
+  slug         String   @unique
+  html         String
+  /// [{ de: "texto original", para: "nome" }]: troca feita além das {{marcações}}.
+  trocas       String   @default("[]")
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  previas      Previa[]
+}
+
+/// Página gerada de um modelo para um negócio. Pública em /p/{slug}.
+model Previa {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  modeloId  String
+  modelo    Modelo   @relation(fields: [modeloId], references: [id], onDelete: Cascade)
+  negocioId String
+  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  /// Valores que sobrescrevem os do negócio: { "nome": "...", "slogan": "..." }.
+  valores   String   @default("{}")
+  /// RASCUNHO | ENVIADA | APROVADA | DESCARTADA
+  status    String   @default("RASCUNHO")
+  visitas   Int      @default(0)
+  vistaEm   DateTime?
+  criadoEm  DateTime @default(now())
+  expiraEm  DateTime
+
+  @@index([negocioId])
+}
+
+/// O que nunca pode sair num texto (mensagem, prévia, copy).
+model ItemListaNegra {
+  id           String   @id @default(cuid())
+  termo        String
+  /// PALAVRA | FRASE | REGEX | REGRA
+  tipo         String   @default("PALAVRA")
+  substituicao String?
+  motivo       String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+
+  @@unique([tipo, termo])
+}
+
+/// Skill de agente (SKILL.md). Vem da pasta skills/, de um repositório do GitHub ou da API.
+model Skill {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  nome         String
+  descricao    String
+  conteudo     String
+  /// [{ nome, conteudo }]
+  referencias  String   @default("[]")
+  ativa        Boolean  @default(true)
+  /// pasta | github | api | painel
+  origem       String   @default("painel")
+  fonte        String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+/// Chave de API para agentes externos (Claude Code, Codex, n8n...). Só o hash fica guardado.
+model ChaveApi {
+  id          String    @id @default(cuid())
+  nome        String
+  prefixo     String
+  hash        String    @unique
+  ativa       Boolean   @default(true)
+  ultimoUsoEm DateTime?
+  criadoEm    DateTime  @default(now())
+}
+
+/// Link de pagamento. Abre em /pagar/{token} com o provedor ligado.
+model Cobranca {
+  id            String    @id @default(cuid())
+  token         String    @unique
+  titulo        String
+  descricao     String?
+  /// Centavos.
+  valor         Int
+  email         String?
+  nomeCliente   String?
+  /// mercadopago | stripe | asaas | pix_manual
+  provedor      String
+  /// ABERTA | PENDENTE | PAGA | CANCELADA | EXPIRADA
+  status        String    @default("ABERTA")
+  externoId     String?
+  urlPagamento  String?
+  pixCopiaCola  String?
+  negocioId     String?
+  negocio       Negocio?  @relation(fields: [negocioId], references: [id], onDelete: SetNull)
+  agenteNome    String?
+  criadoEm      DateTime  @default(now())
+  pagaEm        DateTime?
+  expiraEm      DateTime
+
+  @@index([status, criadoEm])
+  @@index([externoId])
+}
