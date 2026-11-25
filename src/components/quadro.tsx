@@ -73,7 +73,7 @@ export function Quadro({ cartoes }: { cartoes: Cartao[] }) {
                     {c.alerta && <p className="mt-1 text-[12px] text-alerta">{c.alerta}</p>}
                     {c.ultimo && <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-tinta-2">{c.ultimo}</p>}
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="text-[11px] text-tinta-3">{c.quando}</span>
+                      <span className="whitespace-nowrap text-[11px] text-tinta-3">{c.quando}</span>
                       <select
                         aria-label="Mover para"
                         value={c.etapa}
