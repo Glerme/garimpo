@@ -38,7 +38,13 @@ export default async function LayoutPainel({ children }: { children: React.React
         { href: "/lista-negra", nome: "Lista negra", icone: "lista" as const },
       ],
     },
-    { nome: "Dinheiro", itens: [{ href: "/cobrancas", nome: "Cobranças", icone: "cobrancas" as const }] },
+    {
+      nome: "Dinheiro",
+      itens: [
+        { href: "/cobrancas", nome: "Cobranças", icone: "cobrancas" as const },
+        { href: "/precificacao", nome: "Precificação", icone: "dinheiro" as const },
+      ],
+    },
     {
       nome: "Sistema",
       itens: [
