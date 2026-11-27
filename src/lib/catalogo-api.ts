@@ -44,6 +44,8 @@ export const ROTAS: RotaApi[] = [
   { area: "skills", metodo: "PUT", caminho: "/api/v1/skills/{slug}", faz: "Edita uma skill (conteúdo, nome, descrição, ativa).", corpo: { conteudo: "…", ativa: true } },
   { area: "skills", metodo: "DELETE", caminho: "/api/v1/skills/{slug}", faz: "Apaga a skill." },
   { area: "skills", metodo: "POST", caminho: "/api/v1/skills/importar", faz: "Importa todas as skills de um repositório do GitHub.", corpo: { repo: "https://github.com/dono/repo", token: "opcional, só para privado" } },
+  // Precificação
+  { area: "precificacao", metodo: "POST", caminho: "/api/v1/precificacao", faz: "Calcula preço mínimo de site e compara com negócios fechados.", corpo: { tipo: "pagina_unica|institucional|catalogo_blog", horas: 4, valorHora: 15000, custosAno: 4000, rendaMensal: 150000 } },
   // Cobranças
   { area: "cobrancas", metodo: "GET", caminho: "/api/v1/cobrancas", faz: "Lista cobranças.", consulta: { status: "ABERTA|PENDENTE|PAGA|CANCELADA", negocioId: "opcional" } },
   { area: "cobrancas", metodo: "POST", caminho: "/api/v1/cobrancas", faz: "Cria um link de pagamento no checkout ligado. valor em centavos.", corpo: { titulo: "Site profissional", valor: 49700, negocioId: "…", email: "cliente@email.com", nomeCliente: "Zé", descricao: "…", validadeDias: 7 } },
@@ -66,6 +68,7 @@ export const AREAS: Record<string, string> = {
   "lista-negra": "O que nunca pode sair num texto.",
   skills: "Manuais dos agentes (SKILL.md).",
   cobrancas: "Links de pagamento no checkout ligado.",
+  precificacao: "Estimativa de preço para sites.",
   conexoes: "Chaves de checkout, WhatsApp, Rastro e e-mail.",
   sistema: "Ajustes gerais e senha.",
 };
