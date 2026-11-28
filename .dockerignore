@@ -1,0 +1,13 @@
+.env
+.git
+node_modules
+.next
+.next-*
+dados
+servicos/*/node_modules
+servicos/*/.local
+servicos/whatsapp/.sessao
+*.tsbuildinfo
+docs
+marca/*
+!marca/mascote.json
