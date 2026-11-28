@@ -35,6 +35,17 @@ function escreverEnv(arquivo, valores, cabecalho = "") {
   const linhas = Object.entries(valores).map(([k, v]) => `${k}="${String(v).replace(/"/g, '\\"')}"`);
   writeFileSync(arquivo, `${cabecalho}${linhas.join("\n")}\n`);
 }
+const ipv4Valido = host => /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) && host.split(".").every(octeto => Number(octeto) <= 255);
+const hostLocal = host => host === "localhost" || host.startsWith("127.") || ipv4Valido(host);
+function dominioPadrao(env) {
+  if (env.DOMINIO) return env.DOMINIO;
+  try {
+    const host = new URL(env.APP_URL).hostname;
+    return host && !hostLocal(host) ? host : "localhost";
+  } catch {
+    return "localhost";
+  }
+}
 
 console.log("\n  Garimpo · instalação\n");
 
@@ -56,9 +67,20 @@ if (opcao === "2") {
 }
 
 // 2. .env
-const APP_URL = await perguntar("\n  Endereço público (onde o sistema vai ficar)", atual.APP_URL || "http://localhost:3000");
+const padraoDominio = dominioPadrao(atual);
+const enderecoInformado = await perguntar(
+  padraoDominio === "localhost"
+    ? "\n  Domínio público (deixe vazio para uso local)"
+    : `\n  Domínio público (Enter mantém ${padraoDominio})`,
+  padraoDominio,
+);
+const endereco = new URL(/^https?:\/\//i.test(enderecoInformado) ? enderecoInformado : `https://${enderecoInformado}`).hostname;
+const ipv4 = ipv4Valido(endereco);
+const local = hostLocal(endereco);
+const APP_URL = local ? `http://${ipv4 ? endereco : "localhost"}:3000` : `https://${endereco}`;
 const env = {
   DATABASE_URL,
+  ...(!local && { DOMINIO: endereco }),
   APP_SECRET: atual.APP_SECRET || token(),
   APP_URL,
   RASTRO_URL: atual.RASTRO_URL || "http://127.0.0.1:4310",

@@ -63,22 +63,18 @@ Trocou a URL? Rode `npm run db` (gera o cliente e cria as tabelas).
 
 ## Subir em produção
 
-### VPS (Ubuntu/Debian)
+### VPS e Docker (Ubuntu/Debian)
+
+Em VPS, use o Docker: o `docker-compose.yml` exige `DOMINIO` no `.env` e o Caddy cuida do HTTPS (portas 80 e 443; nunca exponha 3000, 4310 e 4320).
 
 ```bash
-npm install && npm run setup     # escolha o banco; o endereço público é o seu domínio
-npm run build
-npm i -g pm2 && pm2 start ecosystem.config.cjs && pm2 save
+npm install && npm run setup  # informe o domínio real: gera o .env com DOMINIO, APP_URL e os tokens
+docker compose up -d --build   # sistema + Rastro + WhatsApp + Caddy em https://SEU-DOMINIO
 ```
 
-Na VPS sem tela, o Rastro roda escondido (`GOOGLE_MAPS_HEADLESS=1`, já no `ecosystem.config.cjs`). Se o Google pedir captcha, rode uma busca com tela no seu computador para aquecer o perfil.
+Passo a passo (DNS, firewall, conta, backup, atualização, PM2): **[docs/deploy-vps.md](docs/deploy-vps.md)**.
 
-### Docker
-
-```bash
-npm run setup          # só para gerar o .env com os tokens
-docker compose up -d
-```
+O compose não serve para uso local: ele não publica a porta 3000 e pede um domínio com DNS. No seu computador, use `npm run dev` ou `npm run tudo`.
 
 ### Vercel
 
