@@ -11,6 +11,7 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "db": "node scripts/db.mjs",
+    "backup": "node scripts/backup.mjs",
     "dev": "node scripts/db.mjs --se-preciso && next dev",
     "build": "node scripts/db.mjs && next build",
     "start": "next start",
