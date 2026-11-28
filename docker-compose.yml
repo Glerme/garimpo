@@ -1,4 +1,4 @@
-# docker compose up -d  → sistema em http://localhost:3000
+# docker compose up -d  → sistema em https://${DOMINIO}
 # Antes: rode `npm run setup` uma vez (gera o .env com os tokens) ou copie .env.example para .env.
 services:
   sistema:
@@ -8,7 +8,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-file:./dados/garimpo.db}
       RASTRO_URL: http://rastro:4310
       WHATSAPP_URL: http://whatsapp:4320
-    ports: ["3000:3000"]
+    expose: ["3000"]
     volumes: ["dados:/app/dados"]
     restart: unless-stopped
   rastro:
@@ -24,7 +24,20 @@ services:
       APP_URL: http://sistema:3000
     volumes: ["sessao:/app/.sessao"]
     restart: unless-stopped
+  caddy:
+    image: caddy:2
+    environment:
+      DOMINIO: ${DOMINIO:?Configure DOMINIO no .env}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [sistema]
+    restart: unless-stopped
 volumes:
   dados:
   rastro:
   sessao:
+  caddy_data:
+  caddy_config:
